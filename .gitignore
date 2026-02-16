@@ -2,6 +2,13 @@
 input.wav
 scribe.json
 
+llama.cpp/
+whisper.cpp/
+
+
+node_modules/
+.cursor/
+
 # Misc
 .DS_Store
 .env

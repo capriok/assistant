@@ -1,0 +1,20 @@
+{
+  "name": "assistant",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "llama-cli": "bash llama-cli.sh",
+    "llama-server": "bash llama-server.sh",
+    "record": "bash record.sh",
+    "scribe": "bash scribe.sh",
+    "query": "bash query.sh",
+    "assistant": "bash assistant.sh"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

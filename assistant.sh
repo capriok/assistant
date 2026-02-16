@@ -5,7 +5,7 @@
 # -----------------------
 
 WHISPER_CLI="./whisper.cpp/build/bin/whisper-cli"
-WHISPER_MODEL="../whisper.cpp/models/ggml-base.en.bin"
+WHISPER_MODEL="./whisper.cpp/models/ggml-base.en.bin"
 LLAMA_ENDPOINT="http://localhost:8000/completion"
 
 AUDIO_FILE="./input.wav"

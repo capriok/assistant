@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "llama-cli": "bash llama-cli.sh",
-    "llama-server": "bash llama-server.sh",
+    "cli": "bash llama-cli.sh",
+    "server": "bash llama-server.sh",
     "record": "bash record.sh",
     "scribe": "bash scribe.sh",
     "query": "bash query.sh",

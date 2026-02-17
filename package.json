@@ -9,9 +9,12 @@
     "record": "bash record.sh",
     "scribe": "bash scribe.sh",
     "query": "bash query.sh",
-    "assistant": "bash assistant.sh"
+    "assistant": "bash assistant.sh",
+    "lint": "biome lint .",
+    "format": "biome format . --write"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
     "@types/bun": "latest"
   },
   "peerDependencies": {

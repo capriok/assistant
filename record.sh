@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 echo "🎙 Speak... (will auto-stop after silence)"
 

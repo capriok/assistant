@@ -9,7 +9,7 @@
     "record": "bash record.sh",
     "scribe": "bash scribe.sh",
     "query": "bash query.sh",
-    "assistant": "bash assistant.sh",
+    "assistant": "bun assistant.ts",
     "lint": "biome lint .",
     "format": "biome format . --write"
   },

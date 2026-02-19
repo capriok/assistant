@@ -4,11 +4,12 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "cli": "bash llama-cli.sh",
-    "server": "bash llama-server.sh",
-    "record": "bash record.sh",
-    "scribe": "bash scribe.sh",
-    "query": "bash query.sh",
+    "cli": "bun llama-cli.ts",
+    "server": "bun llama-server.ts",
+    "record": "bun record.ts",
+    "scribe": "bun scribe.ts",
+    "query": "bun query.ts",
+    "speak": "bun speak.ts",
     "assistant": "bun assistant.ts",
     "lint": "biome lint .",
     "format": "biome format . --write"

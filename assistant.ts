@@ -1,4 +1,4 @@
-import { execFile, spawn } from "node:child_process"
+import { execFile, spawn, spawnSync } from "node:child_process"
 import { existsSync, statSync } from "node:fs"
 import { createInterface } from "node:readline"
 import { promisify } from "node:util"
@@ -18,6 +18,7 @@ const LLM_STYLE = [
 const TTS_RATE = process.env.TTS_RATE ?? "240"
 const TTS_VOICE = process.env.TTS_VOICE ?? "Moira"
 const WAKE_ACK_TEXT = process.env.WAKE_ACK_TEXT ?? "hello"
+const TTS_COMMAND = process.env.TTS_COMMAND?.trim() ?? ""
 const COMMAND_NO_SPEECH_TIMEOUT_MS = parseTimeoutMs(
   process.env.COMMAND_NO_SPEECH_TIMEOUT_MS ?? process.env.COMMAND_TIMEOUT_MS,
   8000
@@ -33,6 +34,7 @@ const INPUT_FILE = `/tmp/assistant-input-${process.pid}.wav`
 const INTERRUPT_FILE = `/tmp/assistant-interrupt-${process.pid}.wav`
 let useManualWake = false
 let wakeProc: ReturnType<typeof spawn> | null = null
+const tts = resolveTtsConfig()
 
 function installShutdownHandlers() {
   const shutdown = () => {
@@ -153,7 +155,12 @@ function waitForManualWake(): Promise<void> {
 }
 
 async function speak(text: string, wakeLines: ReturnType<typeof createInterface>) {
-  const sayProc = spawn("say", ["-v", TTS_VOICE, "-r", TTS_RATE, text], {
+  if (!tts) {
+    console.log("🔇 TTS unavailable:", text)
+    return
+  }
+
+  const sayProc = spawn(tts.command, tts.args(text), {
     stdio: ["ignore", "ignore", "inherit"],
   })
   let wasInterrupted = false
@@ -205,7 +212,7 @@ async function speak(text: string, wakeLines: ReturnType<typeof createInterface>
             resolve()
             return
           }
-          reject(new Error(`say exited with ${code}`))
+          reject(new Error(`${tts.command} exited with ${code}`))
         })
       })
     } catch (err) {
@@ -230,7 +237,7 @@ async function speak(text: string, wakeLines: ReturnType<typeof createInterface>
           resolve()
           return
         }
-        reject(new Error(`say exited with ${code}`))
+        reject(new Error(`${tts.command} exited with ${code}`))
       })
     })
   } catch (err) {
@@ -241,11 +248,9 @@ async function speak(text: string, wakeLines: ReturnType<typeof createInterface>
 async function routeInput(text: string, wakeLines: ReturnType<typeof createInterface>) {
   const normalized = normalize(text)
 
-  console.log("🤖 I heard:", text)
-
   if (normalized.includes("time")) {
-    const now = new Date().toLocaleTimeString()
-    const response = `The time is ${now}`
+    const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    const response = `The time is ${time}`
     console.log("🕒", response)
     await speak(response, wakeLines)
     return
@@ -381,12 +386,73 @@ function safeUnlink(path: string) {
 
 function playWakeAckNonBlocking() {
   const text = WAKE_ACK_TEXT.trim()
-  if (!text) return
+  if (!text || !tts) return
 
-  const sayProc = spawn("say", ["-v", TTS_VOICE, "-r", TTS_RATE, text], {
+  const sayProc = spawn(tts.command, tts.args(text), {
     stdio: ["ignore", "ignore", "ignore"],
   })
   sayProc.on("error", () => {})
+}
+
+type TtsConfig = {
+  command: string
+  args: (text: string) => string[]
+}
+
+function resolveTtsConfig(): TtsConfig | null {
+  if (TTS_COMMAND) {
+    if (commandExists(TTS_COMMAND)) {
+      return {
+        command: TTS_COMMAND,
+        args: (text: string) => [text],
+      }
+    }
+    console.error(`Configured TTS_COMMAND not found in PATH: ${TTS_COMMAND}`)
+  }
+
+  if (process.platform === "darwin" && commandExists("say")) {
+    return {
+      command: "say",
+      args: (text: string) => ["-v", TTS_VOICE, "-r", TTS_RATE, text],
+    }
+  }
+
+  if (process.platform === "linux" && commandExists("espeak")) {
+    return {
+      command: "espeak",
+      args: (text: string) => {
+        const args = ["-s", TTS_RATE]
+        if (TTS_VOICE && TTS_VOICE !== "Moira") {
+          args.push("-v", TTS_VOICE)
+        }
+        args.push(text)
+        return args
+      },
+    }
+  }
+
+  if (process.platform === "linux" && commandExists("spd-say")) {
+    return {
+      command: "spd-say",
+      args: (text: string) => [text],
+    }
+  }
+
+  console.error(
+    "No supported TTS command found. Install 'say' (macOS), 'espeak' or 'spd-say' (Linux), or set TTS_COMMAND."
+  )
+  return null
+}
+
+function commandExists(command: string): boolean {
+  const result = spawnSync("sh", ["-lc", `command -v ${shellEscape(command)} >/dev/null 2>&1`], {
+    stdio: "ignore",
+  })
+  return result.status === 0
+}
+
+function shellEscape(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`
 }
 
 function parseTimeoutMs(input: string | undefined, fallback: number): number {

@@ -4,18 +4,17 @@ Local voice assistant prototype built with Bun, `whisper.cpp`, `llama.cpp`, and 
 
 Status: **Developer beta**.
 
-This is intended for local development and experimentation. The primary supported target is macOS. Linux is best-effort.
+This is intended for local development and experimentation. macOS and Linux are supported for local dev.
 
 ## Features
 
 - Wake-word listener (`assistant-sidecar.py`) using `openwakeword`
 - Speech-to-text via `whisper.cpp`
 - Local LLM completion via `llama.cpp` server
-- Text-to-speech via macOS `say`
+- Text-to-speech via auto-detected local command (`say` on macOS, `espeak`/`spd-say` on Linux)
 
 ## Limitations
 
-- TTS currently uses macOS `say`; Linux users need an alternative TTS command.
 - Model setup is manual.
 - No production support or SLA.
 
@@ -25,7 +24,10 @@ This is intended for local development and experimentation. The primary supporte
 - `bun` 1.0+
 - `python` 3.10+
 - `cmake` and a C/C++ toolchain
-- macOS for built-in TTS (`say`)
+- `sox`
+- TTS command:
+  - macOS: built-in `say`
+  - Linux: `espeak` or `spd-say` (speech-dispatcher)
 
 ## Quick Start
 
@@ -80,6 +82,13 @@ source .venv/bin/activate
 bun run assistant
 ```
 
+For auto-restart when files change during development:
+
+```bash
+source .venv/bin/activate
+bun run assistant:watch
+```
+
 Expected startup output includes lines similar to:
 
 - `Listening for wake word...`
@@ -97,7 +106,8 @@ cp .env.example .env
 Supported variables:
 
 - `TTS_RATE` (default: `240`)
-- `TTS_VOICE` (default: `Moira`)
+- `TTS_VOICE` (default: `Moira`; for Linux `espeak`, set this to a valid `espeak` voice if needed)
+- `TTS_COMMAND` (optional: force a specific TTS executable name from `PATH`)
 - `WAKE_ACK_TEXT` (default: `hello`, set empty to disable)
 - `COMMAND_NO_SPEECH_TIMEOUT_MS` (default: `8000`)
 - `INTERRUPT_NO_SPEECH_TIMEOUT_MS` (default: `5000`)
@@ -124,6 +134,8 @@ bun run check
   - Use a smaller model (default is Qwen2.5 14B) or lower `LLAMA_CTX_SIZE`/`LLAMA_GPU_LAYERS` in `.env`.
 - `No such file or directory` for whisper/llama binaries
   - Re-run `bun run build:llama` and `bun run build:whisper`.
+- `No supported TTS command found`
+  - On Linux, install `espeak` or `speech-dispatcher` (`spd-say`), or set `TTS_COMMAND` to a valid command in `PATH`.
 
 ## Security
 

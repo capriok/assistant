@@ -6,6 +6,8 @@
   "scripts": {
     "cli": "bun llama-cli.ts",
     "server": "bun llama-server.ts",
+    "assistant": "bun assistant.ts",
+    "assistant:watch": "bun --watch assistant.ts",
     "assist": "bun assistant.ts",
     "smoke": "bun scripts/smoke-check.ts",
     "setup:submodules": "git submodule update --init --recursive",

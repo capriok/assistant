@@ -278,7 +278,7 @@ async function routeInput(text: string, wakeLines: ReturnType<typeof createInter
     await speak(answer, wakeLines)
   } catch (err) {
     console.error("Assistant request failed:", (err as Error).message)
-    const msg = "Uh oh, something went wrong talking to the local model server."
+    const msg = "Ugh, try again later."
     console.log("🤖", msg)
     await speak(msg, wakeLines)
   }

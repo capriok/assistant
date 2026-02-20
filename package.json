@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "cli": "bun llama-cli.ts",
+    "model:download": "./llama.cpp/build/bin/llama-cli -hf Qwen/Qwen3-32B-GGUF:Q4_K_M -n 1 -p \"hi\"",
     "server": "bun llama-server.ts",
     "record": "bun record.ts",
     "scribe": "bun scribe.ts",

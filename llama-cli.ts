@@ -10,5 +10,8 @@ if (!prompt) {
 }
 
 const proc = spawn(LLAMA_CLI, ["-m", MODEL, "-p", prompt], { stdio: "inherit" })
-proc.on("error", (err) => { console.error(err.message); process.exit(1) })
+proc.on("error", (err) => {
+  console.error(err.message)
+  process.exit(1)
+})
 proc.on("close", (code) => process.exit(code ?? 0))

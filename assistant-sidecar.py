@@ -38,10 +38,19 @@ FEATURE_EMBED_TFLITE = "./wakewords/_shared/embedding_model.tflite"
 CHUNK = 1280
 SAMPLE_RATE = 16000
 
+LOG_PREFIX = ""
 
 def _die(msg: str):
-    print(f"[Sidecar] {msg}", file=sys.stderr, flush=True)
+    print(f"{LOG_PREFIX} {msg}", file=sys.stderr, flush=True)
     raise SystemExit(1)
+
+
+def _exit_on_broken_pipe():
+    # Prevent Python from trying to flush a dead stdout pipe during shutdown.
+    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull_fd, sys.stdout.fileno())
+    os.close(devnull_fd)
+    raise SystemExit(0)
 
 
 def _abs(path: str) -> str:
@@ -102,7 +111,7 @@ def main():
         _die(f"Microphone init failed: {err}")
 
     print(
-        f"[Sidecar] Listening for wake word ({wake_name}, {framework})...",
+        f"{LOG_PREFIX} Listening... (Say {wake_name})",
         file=sys.stderr,
         flush=True,
     )
@@ -114,9 +123,12 @@ def main():
             predictions = model.predict(audio)
             score = max((value for key, value in predictions.items() if wake_name in key), default=0.0)
             if score > WAKE_THRESHOLD:
-                print("WAKE_DETECTED", flush=True)
+                try:
+                    print("WAKE_DETECTED", flush=True)
+                except BrokenPipeError:
+                    _exit_on_broken_pipe()
     except KeyboardInterrupt:
-        print("[Sidecar] Stopping wake listener...", file=sys.stderr, flush=True)
+        print(f"{LOG_PREFIX} Stopping wake listener...", file=sys.stderr, flush=True)
     finally:
         stream.stop_stream()
         stream.close()

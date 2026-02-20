@@ -63,6 +63,7 @@ async function main() {
 
     console.log("🟢 Wake word detected!")
     playWakeAckNonBlocking()
+
     console.log("🎙 Speak your command...")
     const heardCommand = await recordUntilSilence(
       INPUT_FILE,
@@ -80,6 +81,16 @@ async function main() {
     const transcript = await transcribe(INPUT_FILE)
     safeUnlink(INPUT_FILE)
 
+    // if equals WAKE_ACK_TEXT (case insensitive, a-z only), continue
+    if (
+      normalizeAlpha(transcript) &&
+      normalizeAlpha(transcript) === normalizeAlpha(WAKE_ACK_TEXT)
+    ) {
+      sleep(2500)
+      console.log("🔍 Wake word detected. Continuing...")
+      continue
+    }
+
     if (transcript) {
       console.log("🗣 You said:", transcript)
       await routeInput(transcript, wakeLines)
@@ -92,6 +103,10 @@ async function main() {
 }
 
 main().catch(console.error)
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 function spawnWakeSidecar() {
   const proc = spawn("python3", ["assistant-sidecar.py"], {
@@ -377,6 +392,10 @@ function normalize(text: string): string {
     .toLowerCase()
     .replace(/[^\w\s]/g, "")
     .trim()
+}
+
+function normalizeAlpha(text: string): string {
+  return text.toLowerCase().replace(/[^a-z]/g, "")
 }
 
 function safeUnlink(path: string) {

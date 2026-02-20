@@ -108,6 +108,7 @@ Supported variables:
 - `TTS_RATE` (default: `240`)
 - `TTS_VOICE` (default: `Moira`; for Linux `espeak`, set this to a valid `espeak` voice if needed)
 - `TTS_COMMAND` (optional: force a specific TTS executable name from `PATH`)
+- `WAKE_SELF_SUPPRESS_MS` (default: `1400`; ignore wake triggers during/just after local TTS to avoid self-trigger)
 - `WAKE_ACK_TEXT` (default: `hello`, set empty to disable)
 - `COMMAND_NO_SPEECH_TIMEOUT_MS` (default: `8000`)
 - `INTERRUPT_NO_SPEECH_TIMEOUT_MS` (default: `5000`)

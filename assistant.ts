@@ -20,8 +20,27 @@ const TTS_VOICE = process.env.TTS_VOICE ?? "Moira"
 const INPUT_FILE = `/tmp/assistant-input-${process.pid}.wav`
 const INTERRUPT_FILE = `/tmp/assistant-interrupt-${process.pid}.wav`
 let useManualWake = false
+let wakeProc: ReturnType<typeof spawn> | null = null
+
+function installShutdownHandlers() {
+  const shutdown = () => {
+    if (wakeProc && !wakeProc.killed) {
+      wakeProc.kill("SIGTERM")
+    }
+  }
+
+  process.on("SIGINT", () => {
+    shutdown()
+    process.exit(0)
+  })
+  process.on("SIGTERM", () => {
+    shutdown()
+    process.exit(0)
+  })
+}
 
 async function main() {
+  installShutdownHandlers()
   const wakeLines = spawnWakeSidecar()
 
   while (true) {
@@ -51,6 +70,7 @@ main().catch(console.error)
 
 function spawnWakeSidecar() {
   const proc = spawn("python3", ["wake.py"], { stdio: ["ignore", "pipe", "inherit"] })
+  wakeProc = proc
   const lines = createInterface({ input: proc.stdout! })
 
   proc.on("error", (err) => {

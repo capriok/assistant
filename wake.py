@@ -111,6 +111,8 @@ def main():
             score = max((value for key, value in predictions.items() if wake_name in key), default=0.0)
             if score > WAKE_THRESHOLD:
                 print("WAKE_DETECTED", flush=True)
+    except KeyboardInterrupt:
+        print("[wake.py] Stopping wake listener...", file=sys.stderr, flush=True)
     finally:
         stream.stop_stream()
         stream.close()

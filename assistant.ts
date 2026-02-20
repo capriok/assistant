@@ -71,7 +71,17 @@ main().catch(console.error)
 function spawnWakeSidecar() {
   const proc = spawn("python3", ["wake.py"], { stdio: ["ignore", "pipe", "inherit"] })
   wakeProc = proc
-  const lines = createInterface({ input: proc.stdout! })
+  const stdout = proc.stdout
+  if (!stdout) {
+    console.error("Wake sidecar started without stdout pipe.")
+    console.error("Falling back to manual trigger mode.")
+    useManualWake = true
+    const fallback = createInterface({ input: process.stdin, output: process.stdout })
+    queueMicrotask(() => fallback.emit("line", "WAKE_DETECTED"))
+    return fallback
+  }
+
+  const lines = createInterface({ input: stdout })
 
   proc.on("error", (err) => {
     console.error("Failed to start wake sidecar:", err.message)

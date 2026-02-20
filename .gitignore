@@ -1,18 +1,15 @@
-#Project
-hey-sweetie.wav
-wake.wav
-input.wav
+# Project artifacts
+*.wav
 scribe.json
+*.pyc
+__pycache__/
+.venv/
 
-llama.cpp/
-whisper.cpp/
-
-
+# Dependencies
 node_modules/
-.cursor/
 
-# Misc
-.DS_Store
+# Editor/system
+.cursor/
 .env
 .env.local
 .env.development.local
@@ -21,3 +18,4 @@ node_modules/
 .env.development
 .env.test
 .env.production
+.DS_Store

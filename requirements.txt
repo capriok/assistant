@@ -1,0 +1,4 @@
+numpy>=1.24
+openwakeword>=0.6.0
+onnxruntime>=1.16
+pyaudio>=0.2.14

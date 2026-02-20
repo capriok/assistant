@@ -1,4 +1,4 @@
-import { spawn } from "child_process"
+import { spawn } from "node:child_process"
 
 const LLAMA_CLI = "./llama.cpp/build/bin/llama-cli"
 const MODEL = "./llama.cpp/models/qwen2.5-1.5b-instruct-q4_k_m.gguf"

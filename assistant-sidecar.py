@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Wake word sidecar for assistant.ts.
+Wake word Sidecar for assistant.ts.
 Prints WAKE_DETECTED to stdout whenever the selected model score crosses the threshold.
 """
 import os
@@ -40,7 +40,7 @@ SAMPLE_RATE = 16000
 
 
 def _die(msg: str):
-    print(f"[wake.py] {msg}", file=sys.stderr, flush=True)
+    print(f"[Sidecar] {msg}", file=sys.stderr, flush=True)
     raise SystemExit(1)
 
 
@@ -101,7 +101,11 @@ def main():
         pa.terminate()
         _die(f"Microphone init failed: {err}")
 
-    print(f"[wake.py] Listening for wake word ({wake_name}, {framework})...", file=sys.stderr, flush=True)
+    print(
+        f"[Sidecar] Listening for wake word ({wake_name}, {framework})...",
+        file=sys.stderr,
+        flush=True,
+    )
 
     try:
         while True:
@@ -112,7 +116,7 @@ def main():
             if score > WAKE_THRESHOLD:
                 print("WAKE_DETECTED", flush=True)
     except KeyboardInterrupt:
-        print("[wake.py] Stopping wake listener...", file=sys.stderr, flush=True)
+        print("[Sidecar] Stopping wake listener...", file=sys.stderr, flush=True)
     finally:
         stream.stop_stream()
         stream.close()

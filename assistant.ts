@@ -1,4 +1,5 @@
 import { execFile, spawn } from "node:child_process"
+import { existsSync, statSync } from "node:fs"
 import { createInterface } from "node:readline"
 import { promisify } from "node:util"
 
@@ -16,6 +17,17 @@ const LLM_STYLE = [
 ].join(" ")
 const TTS_RATE = process.env.TTS_RATE ?? "240"
 const TTS_VOICE = process.env.TTS_VOICE ?? "Moira"
+const WAKE_ACK_TEXT = process.env.WAKE_ACK_TEXT ?? "hello"
+const COMMAND_NO_SPEECH_TIMEOUT_MS = parseTimeoutMs(
+  process.env.COMMAND_NO_SPEECH_TIMEOUT_MS ?? process.env.COMMAND_TIMEOUT_MS,
+  8000
+)
+const INTERRUPT_NO_SPEECH_TIMEOUT_MS = parseTimeoutMs(
+  process.env.INTERRUPT_NO_SPEECH_TIMEOUT_MS ?? process.env.INTERRUPT_TIMEOUT_MS,
+  5000
+)
+const COMMAND_END_SILENCE_MS = parseTimeoutMs(process.env.COMMAND_END_SILENCE_MS, 1200)
+const INTERRUPT_END_SILENCE_MS = parseTimeoutMs(process.env.INTERRUPT_END_SILENCE_MS, 900)
 
 const INPUT_FILE = `/tmp/assistant-input-${process.pid}.wav`
 const INTERRUPT_FILE = `/tmp/assistant-interrupt-${process.pid}.wav`
@@ -48,8 +60,19 @@ async function main() {
     await waitForWake(wakeLines)
 
     console.log("🟢 Wake word detected!")
+    playWakeAckNonBlocking()
     console.log("🎙 Speak your command...")
-    await recordUntilSilence(INPUT_FILE)
+    const heardCommand = await recordUntilSilence(
+      INPUT_FILE,
+      COMMAND_NO_SPEECH_TIMEOUT_MS,
+      COMMAND_END_SILENCE_MS
+    )
+    if (!heardCommand) {
+      safeUnlink(INPUT_FILE)
+      console.log("⏱️ Command timed out. Returning to wake listening.")
+      console.log("--------------------------------")
+      continue
+    }
 
     console.log("🧠 Transcribing command...")
     const transcript = await transcribe(INPUT_FILE)
@@ -69,7 +92,9 @@ async function main() {
 main().catch(console.error)
 
 function spawnWakeSidecar() {
-  const proc = spawn("python3", ["wake.py"], { stdio: ["ignore", "pipe", "inherit"] })
+  const proc = spawn("python3", ["assistant-sidecar.py"], {
+    stdio: ["ignore", "pipe", "inherit"],
+  })
   wakeProc = proc
   const stdout = proc.stdout
   if (!stdout) {
@@ -91,7 +116,7 @@ function spawnWakeSidecar() {
   })
 
   proc.on("close", (code) => {
-    console.error(`wake.py exited with code ${code}`)
+    console.error(`assistant-sidecar.py exited with code ${code}`)
     console.error("Falling back to manual trigger mode.")
     useManualWake = true
     lines.emit("line", "WAKE_DETECTED")
@@ -141,23 +166,29 @@ async function speak(text: string, wakeLines: ReturnType<typeof createInterface>
 
       interruptTask = (async () => {
         wasInterrupted = true
-        console.log("🛑 Wake detected during response.")
+        console.log("🛑 Wake word detected during TTS. Interrupting...")
         sayProc.kill("SIGTERM")
-        console.log("🎙 Say 'stop' to cancel, or a new question to continue.")
-        await recordUntilSilence(INTERRUPT_FILE)
-        const interruptTranscript = await transcribe(INTERRUPT_FILE)
-        safeUnlink(INTERRUPT_FILE)
-        const normalized = normalize(interruptTranscript)
-
-        if (isStopCommand(normalized)) {
-          console.log("🛑 Stopped.")
+        console.log("🎙 Speak your next command...")
+        const heardInterrupt = await recordUntilSilence(
+          INTERRUPT_FILE,
+          INTERRUPT_NO_SPEECH_TIMEOUT_MS,
+          INTERRUPT_END_SILENCE_MS
+        )
+        if (!heardInterrupt) {
+          safeUnlink(INTERRUPT_FILE)
+          console.log("⏱️ Interrupt capture timed out.")
           return
         }
+        const interruptTranscript = await transcribe(INTERRUPT_FILE)
+        safeUnlink(INTERRUPT_FILE)
 
         if (interruptTranscript.trim()) {
           console.log("↪️ Continuing with:", interruptTranscript)
           await routeInput(interruptTranscript, wakeLines)
+          return
         }
+
+        console.log("⚠️ No interrupt command detected.")
       })().catch((err) => {
         console.error("Interrupt handling error:", (err as Error).message)
       })
@@ -245,8 +276,9 @@ async function routeInput(text: string, wakeLines: ReturnType<typeof createInter
     const answer = cleanResponse(data.content ?? "")
     console.log("🤖 Response:", answer)
     await speak(answer, wakeLines)
-  } catch {
-    const msg = "Uh oh, something went wrong."
+  } catch (err) {
+    console.error("Assistant request failed:", (err as Error).message)
+    const msg = "Uh oh, something went wrong talking to the local model server."
     console.log("🤖", msg)
     await speak(msg, wakeLines)
   }
@@ -266,16 +298,62 @@ function cleanResponse(text: string): string {
   return output
 }
 
-function recordUntilSilence(filename: string): Promise<void> {
+function recordUntilSilence(
+  filename: string,
+  noSpeechTimeoutMs: number,
+  endSilenceMs: number
+): Promise<boolean> {
+  const endSilenceSeconds = (endSilenceMs / 1000).toFixed(2)
+
   return new Promise((resolve, reject) => {
     const sox = spawn(
       "sox",
-      ["-d", "-r", "16000", "-c", "1", filename, "silence", "1", "0.1", "1%", "1", "1.0", "1%"],
+      [
+        "-d",
+        "-r",
+        "16000",
+        "-c",
+        "1",
+        filename,
+        "silence",
+        "1",
+        "0.1",
+        "1%",
+        "1",
+        endSilenceSeconds,
+        "1%",
+      ],
       { stdio: "ignore" }
     )
 
-    sox.on("close", () => resolve())
-    sox.on("error", reject)
+    let timedOut = false
+    let heardSpeech = false
+
+    const poll = setInterval(() => {
+      if (!existsSync(filename)) return
+      const size = statSync(filename).size
+      if (size > 44) {
+        heardSpeech = true
+      }
+    }, 150)
+
+    const timer = setTimeout(() => {
+      if (!heardSpeech) {
+        timedOut = true
+        sox.kill("SIGTERM")
+      }
+    }, noSpeechTimeoutMs)
+
+    sox.on("close", () => {
+      clearInterval(poll)
+      clearTimeout(timer)
+      resolve(!timedOut)
+    })
+    sox.on("error", (err) => {
+      clearInterval(poll)
+      clearTimeout(timer)
+      reject(err)
+    })
   })
 }
 
@@ -296,17 +374,25 @@ function normalize(text: string): string {
     .trim()
 }
 
-function isStopCommand(text: string): boolean {
-  return (
-    text === "stop" ||
-    text.includes(" stop") ||
-    text.includes("cancel") ||
-    text.includes("quiet") ||
-    text.includes("shut up")
-  )
-}
-
 function safeUnlink(path: string) {
   const rm = spawn("rm", ["-f", path], { stdio: "ignore" })
   rm.on("error", () => {})
+}
+
+function playWakeAckNonBlocking() {
+  const text = WAKE_ACK_TEXT.trim()
+  if (!text) return
+
+  const sayProc = spawn("say", ["-v", TTS_VOICE, "-r", TTS_RATE, text], {
+    stdio: ["ignore", "ignore", "ignore"],
+  })
+  sayProc.on("error", () => {})
+}
+
+function parseTimeoutMs(input: string | undefined, fallback: number): number {
+  const n = Number(input)
+  if (!Number.isFinite(n) || n <= 0) {
+    return fallback
+  }
+  return Math.round(n)
 }

@@ -4,7 +4,7 @@ const requiredFiles = [
   "assistant.ts",
   "llama-cli.ts",
   "llama-server.ts",
-  "wake.py",
+  "assistant-sidecar.py",
   ".gitmodules",
   "wakewords/_shared/embedding_model.onnx",
   "wakewords/_shared/melspectrogram.onnx",

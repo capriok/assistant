@@ -8,7 +8,7 @@ This is intended for local development and experimentation. The primary supporte
 
 ## Features
 
-- Wake-word listener (`wake.py`) using `openwakeword`
+- Wake-word listener (`assistant-sidecar.py`) using `openwakeword`
 - Speech-to-text via `whisper.cpp`
 - Local LLM completion via `llama.cpp` server
 - Text-to-speech via macOS `say`
@@ -62,7 +62,7 @@ llama.cpp/models/
 The default CLI script expects:
 
 ```text
-llama.cpp/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+llama.cpp/models/Qwen2.5-14B-Instruct-Q4_K_M.gguf
 ```
 
 ## Run
@@ -98,6 +98,11 @@ Supported variables:
 
 - `TTS_RATE` (default: `240`)
 - `TTS_VOICE` (default: `Moira`)
+- `WAKE_ACK_TEXT` (default: `hello`, set empty to disable)
+- `COMMAND_NO_SPEECH_TIMEOUT_MS` (default: `8000`)
+- `INTERRUPT_NO_SPEECH_TIMEOUT_MS` (default: `5000`)
+- `COMMAND_END_SILENCE_MS` (default: `1200`)
+- `INTERRUPT_END_SILENCE_MS` (default: `900`)
 
 ## Validation
 
@@ -109,12 +114,14 @@ bun run check
 
 ## Troubleshooting
 
-- `wake.py exited with code ...`
+- `assistant-sidecar.py exited with code ...`
   - Ensure your virtual environment is active and `pip install -r requirements.txt` completed.
 - `Microphone init failed`
   - Grant microphone permissions to your terminal app.
 - `LLM HTTP ...`
   - Confirm `bun run server` is running and reachable at `http://localhost:8000`.
+- `Insufficient Memory` / Metal OOM on server startup
+  - Use a smaller model (default is Qwen2.5 14B) or lower `LLAMA_CTX_SIZE`/`LLAMA_GPU_LAYERS` in `.env`.
 - `No such file or directory` for whisper/llama binaries
   - Re-run `bun run build:llama` and `bun run build:whisper`.
 

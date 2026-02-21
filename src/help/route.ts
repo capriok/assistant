@@ -1,6 +1,8 @@
 import type { createInterface } from "node:readline"
-import config from "./config.ts"
+import { buildChatPrompt, requestCompletion } from "./llm.ts"
 import { normalize } from "./text.ts"
+import type { ToolContext } from "./tools/.types.ts"
+import { TOOLS } from "./tools/index.ts"
 
 export async function routeInput(
   text: string,
@@ -8,38 +10,32 @@ export async function routeInput(
   speak: (text: string, wakeLines: ReturnType<typeof createInterface>) => Promise<void>
 ): Promise<void> {
   const normalized = normalize(text)
+  const ctx: ToolContext = {
+    rawInput: text,
+    normalizedInput: normalized,
+  }
 
-  if (normalized.includes("time")) {
-    const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-    const response = `The time is ${time}`
-    console.log("🕒", response)
-    await speak(response, wakeLines)
-    return
+  const tool = TOOLS.find((candidate) => candidate.match(ctx.normalizedInput, ctx))
+  if (tool) {
+    try {
+      const answer = (await tool.run(ctx)).trim()
+      if (answer) {
+        console.log(`🔧 Tool: ${tool.id}`)
+        console.log("🤖 Response:", answer)
+        await speak(answer, wakeLines)
+        return
+      }
+    } catch (err) {
+      console.error(`Tool ${tool.id} failed:`, (err as Error).message)
+    }
   }
 
   const query = text.trim()
   console.log("🔍 Asking assistant:", query)
 
   try {
-    const prompt = `System: ${config.llm.style}\nUser: ${query}\nAssistant:`
-    const response = await fetch(config.llm.endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt,
-        n_predict: 96,
-        temperature: 0.1,
-        top_p: 0.9,
-        repeat_penalty: 1.1,
-        stop: ["\nUser:", "\nSystem:"],
-      }),
-    })
-    if (!response.ok) {
-      const body = await response.text()
-      throw new Error(`LLM HTTP ${response.status}: ${body}`)
-    }
-    const data = (await response.json()) as { content?: string }
-    const answer = cleanResponse(data.content ?? "")
+    const prompt = buildChatPrompt(query)
+    const answer = cleanResponse(await requestCompletion(prompt))
     console.log("🤖 Response:", answer)
     await speak(answer, wakeLines)
   } catch (err) {

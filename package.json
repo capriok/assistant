@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "cli": "bun src/llama-cli.ts",
-    "server": "bun src/llama-server.ts",
-    "assistant": "bun src/assistant.ts",
-    "assistant:watch": "bun --watch src/assistant.ts",
+    "server": "bun src/asststant-server.ts",
+    "assist": "bun src/assistant.ts",
+    "assist:dev": "bun --watch src/assistant.ts",
     "smoke": "bun scripts/smoke-check.ts",
     "setup:submodules": "git submodule update --init --recursive",
     "build:llama": "cmake -S ./packages/llama.cpp -B ./packages/llama.cpp/build && cmake --build ./packages/llama.cpp/build -j",

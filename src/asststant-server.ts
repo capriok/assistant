@@ -1,5 +1,5 @@
-import { parseBooleanEnv } from "./utils/env.ts"
-import { runCommandAndExit } from "./utils/system.ts"
+import { parseBooleanEnv } from "./help/env.ts"
+import { runCommandAndExit } from "./help/system.ts"
 
 const LLAMA_SERVER = "./packages/llama.cpp/build/bin/llama-server"
 const HF_REPO = process.env.LLAMA_HF_REPO ?? "bartowski/Qwen2.5-14B-Instruct-GGUF:Q4_K_M"

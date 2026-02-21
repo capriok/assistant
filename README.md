@@ -8,7 +8,7 @@ This is intended for local development and experimentation. macOS and Linux are 
 
 ## Features
 
-- Wake-word listener (`assistant-sidecar.py`) using `openwakeword`
+- Wake-word listener (`src/assistant-sidecar.py`) using `openwakeword`
 - Speech-to-text via `whisper.cpp`
 - Local LLM completion via `llama.cpp` server
 - Text-to-speech via auto-detected local command (`say` on macOS, `espeak`/`spd-say` on Linux)
@@ -41,6 +41,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 bun run build:llama
 bun run build:whisper
+bun run model:download:whisper
+bun run model:download
 ```
 
 ## Models
@@ -50,7 +52,13 @@ bun run build:whisper
 Place a Whisper model in:
 
 ```text
-whisper.cpp/models/ggml-base.en.bin
+packages/whisper.cpp/models/ggml-base.en.bin
+```
+
+Or download the default model:
+
+```bash
+bun run model:download:whisper
 ```
 
 ### LLM model
@@ -58,13 +66,19 @@ whisper.cpp/models/ggml-base.en.bin
 Download a GGUF model for `llama.cpp` and place it in:
 
 ```text
-llama.cpp/models/
+packages/llama.cpp/models/
 ```
 
 The default CLI script expects:
 
 ```text
-llama.cpp/models/Qwen2.5-14B-Instruct-Q4_K_M.gguf
+packages/llama.cpp/models/Qwen2.5-14B-Instruct-Q4_K_M.gguf
+```
+
+Or download via `llama.cpp`:
+
+```bash
+bun run model:download
 ```
 
 ## Run
@@ -82,11 +96,23 @@ source .venv/bin/activate
 bun run assistant
 ```
 
+Alias:
+
+```bash
+bun run assist
+```
+
 For auto-restart when files change during development:
 
 ```bash
 source .venv/bin/activate
 bun run assistant:watch
+```
+
+Alias:
+
+```bash
+bun run assist:dev
 ```
 
 Expected startup output includes lines similar to:
@@ -110,6 +136,8 @@ Supported variables:
 - `TTS_COMMAND` (optional: force a specific TTS executable name from `PATH`)
 - `WAKE_SELF_SUPPRESS_MS` (default: `1400`; ignore wake triggers during/just after local TTS to avoid self-trigger)
 - `WAKE_ACK_TEXT` (default: `hello`, set empty to disable)
+- `WHISPER_MODEL` (default: `./packages/whisper.cpp/models/ggml-base.en.bin`)
+- `WHISPER_NO_GPU` (default: `0`; set `1` to force CPU transcription)
 - `COMMAND_NO_SPEECH_TIMEOUT_MS` (default: `8000`)
 - `INTERRUPT_NO_SPEECH_TIMEOUT_MS` (default: `5000`)
 - `COMMAND_END_SILENCE_MS` (default: `1200`)
@@ -135,6 +163,8 @@ bun run check
   - Use a smaller model (default is Qwen2.5 14B) or lower `LLAMA_CTX_SIZE`/`LLAMA_GPU_LAYERS` in `.env`.
 - `No such file or directory` for whisper/llama binaries
   - Re-run `bun run build:llama` and `bun run build:whisper`.
+- `failed to open './packages/whisper.cpp/models/ggml-base.en.bin'`
+  - Run `bun run model:download:whisper` or set `WHISPER_MODEL` in `.env`.
 - `No supported TTS command found`
   - On Linux, install `espeak` or `speech-dispatcher` (`spd-say`), or set `TTS_COMMAND` to a valid command in `PATH`.
 

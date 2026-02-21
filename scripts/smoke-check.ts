@@ -1,11 +1,13 @@
 import { existsSync } from "node:fs"
 
 const requiredFiles = [
-  "assistant.ts",
-  "llama-cli.ts",
-  "llama-server.ts",
-  "assistant-sidecar.py",
+  "src/assistant.ts",
+  "src/llama-cli.ts",
+  "src/llama-server.ts",
+  "src/assistant-sidecar.py",
   ".gitmodules",
+  "packages/llama.cpp/CMakeLists.txt",
+  "packages/whisper.cpp/CMakeLists.txt",
   "wakewords/_shared/embedding_model.onnx",
   "wakewords/_shared/melspectrogram.onnx",
 ]

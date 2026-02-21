@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.2/schema.json",
   "files": {
-    "includes": ["**", "!llama.cpp", "!whisper.cpp"]
+    "includes": ["**", "!packages/llama.cpp", "!packages/whisper.cpp"]
   },
   "formatter": {
     "enabled": true,

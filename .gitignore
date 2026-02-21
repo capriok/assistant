@@ -4,12 +4,15 @@ scribe.json
 *.pyc
 __pycache__/
 .venv/
+packages/llama.cpp/build/
+packages/whisper.cpp/build/
 
 # Dependencies
 node_modules/
 
 # Editor/system
 .cursor/
+.plans/
 .env
 .env.local
 .env.development.local

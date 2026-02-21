@@ -5,8 +5,10 @@ import { promisify } from "node:util"
 
 const execFileAsync = promisify(execFile)
 
-const WHISPER = "./whisper.cpp/build/bin/whisper-cli"
-const MODEL = "./whisper.cpp/models/ggml-base.en.bin"
+const WHISPER = "./packages/whisper.cpp/build/bin/whisper-cli"
+const DEFAULT_WHISPER_MODEL = "./packages/whisper.cpp/models/ggml-base.en.bin"
+const MODEL = process.env.WHISPER_MODEL?.trim() || DEFAULT_WHISPER_MODEL
+const WHISPER_NO_GPU = parseBooleanEnv(process.env.WHISPER_NO_GPU, false)
 const LLM_ENDPOINT = "http://localhost:8000/completion"
 
 const LLM_STYLE = [
@@ -32,6 +34,7 @@ const INTERRUPT_END_SILENCE_MS = parseTimeoutMs(process.env.INTERRUPT_END_SILENC
 
 const INPUT_FILE = `/tmp/assistant-input-${process.pid}.wav`
 const INTERRUPT_FILE = `/tmp/assistant-interrupt-${process.pid}.wav`
+const WAKE_SIDECAR_PATH = new URL("./assistant-sidecar.py", import.meta.url).pathname
 let useManualWake = false
 let wakeProc: ReturnType<typeof spawn> | null = null
 const tts = resolveTtsConfig()
@@ -109,7 +112,7 @@ function sleep(ms: number) {
 }
 
 function spawnWakeSidecar() {
-  const proc = spawn("python3", ["assistant-sidecar.py"], {
+  const proc = spawn("python3", [WAKE_SIDECAR_PATH], {
     stdio: ["ignore", "pipe", "inherit"],
   })
   wakeProc = proc
@@ -378,10 +381,29 @@ function recordUntilSilence(
 }
 
 async function transcribe(filename: string): Promise<string> {
+  const args = ["-f", filename, "-m", MODEL, "-nt"]
+  if (WHISPER_NO_GPU) {
+    args.push("-ng")
+  }
+
   try {
-    const { stdout } = await execFileAsync(WHISPER, ["-f", filename, "-m", MODEL, "-nt"])
+    const { stdout } = await execFileAsync(WHISPER, args)
     return stdout.trim()
   } catch (err) {
+    const message = String((err as { message?: string })?.message ?? "")
+    const stderr = String((err as { stderr?: string })?.stderr ?? "")
+
+    if (message.includes("ENOENT") && message.includes(WHISPER)) {
+      console.error(`Whisper binary not found at ${WHISPER}. Run: bun run build:whisper`)
+      return ""
+    }
+    if (stderr.includes("failed to open") && stderr.includes(MODEL)) {
+      console.error(
+        `Whisper model not found at ${MODEL}. Run: ./packages/whisper.cpp/models/download-ggml-model.sh base.en`
+      )
+      return ""
+    }
+
     console.error("Transcription error:", err)
     return ""
   }
@@ -480,4 +502,12 @@ function parseTimeoutMs(input: string | undefined, fallback: number): number {
     return fallback
   }
   return Math.round(n)
+}
+
+function parseBooleanEnv(input: string | undefined, fallback: boolean): boolean {
+  if (!input) return fallback
+  const normalized = input.trim().toLowerCase()
+  if (["1", "true", "yes", "on"].includes(normalized)) return true
+  if (["0", "false", "no", "off"].includes(normalized)) return false
+  return fallback
 }

@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process"
 
-const LLAMA_SERVER = "./llama.cpp/build/bin/llama-server"
+const LLAMA_SERVER = "./packages/llama.cpp/build/bin/llama-server"
 const HF_REPO = process.env.LLAMA_HF_REPO ?? "bartowski/Qwen2.5-14B-Instruct-GGUF:Q4_K_M"
 const HOST = process.env.LLAMA_HOST ?? "127.0.0.1"
 const PORT = process.env.LLAMA_PORT ?? "8000"

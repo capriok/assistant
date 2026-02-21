@@ -1,6 +1,6 @@
 [submodule "llama.cpp"]
-	path = llama.cpp
+	path = packages/llama.cpp
 	url = https://github.com/ggml-org/llama.cpp.git
 [submodule "whisper.cpp"]
-	path = whisper.cpp
+	path = packages/whisper.cpp
 	url = https://github.com/ggml-org/whisper.cpp.git

@@ -25,11 +25,19 @@ export async function routeInput(
         console.log(`🔧 Tool: ${tool.id} (score=${toolMatch.score}, rule=${formatMatchedRule(toolMatch.matchedRule)})`)
         console.log("🤖 Response:", answer)
         await speak(answer, wakeLines)
-        return
+      } else {
+        const msg = "I matched a tool, but it returned no answer."
+        console.log(`🔧 Tool: ${tool.id} (score=${toolMatch.score}, rule=${formatMatchedRule(toolMatch.matchedRule)})`)
+        console.log("🤖", msg)
+        await speak(msg, wakeLines)
       }
     } catch (err) {
       console.error(`Tool ${tool.id} failed:`, (err as Error).message)
+      const msg = "That tool failed. Try again."
+      console.log("🤖", msg)
+      await speak(msg, wakeLines)
     }
+    return
   }
 
   const query = text.trim()

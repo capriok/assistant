@@ -4,6 +4,23 @@ import config from "./config.ts"
 import { recordInterruptUntilSilence } from "./record.ts"
 import { commandExists, safeUnlink } from "./system.ts"
 
+let activeTtsProc: ReturnType<typeof spawn> | null = null
+
+function markActiveTts(proc: ReturnType<typeof spawn>): void {
+  activeTtsProc = proc
+  proc.on("close", () => {
+    if (activeTtsProc === proc) {
+      activeTtsProc = null
+    }
+  })
+}
+
+function stopActiveTts(): void {
+  if (activeTtsProc && !activeTtsProc.killed) {
+    activeTtsProc.kill("SIGTERM")
+  }
+}
+
 export type TtsConfig = {
   command: string
   args: (text: string) => string[]
@@ -58,9 +75,12 @@ export function playWakeAckNonBlocking(tts: TtsConfig | null): void {
   const text = config.tts.wakeAckText.trim()
   if (!text || !tts) return
 
+  stopActiveTts()
+
   const sayProc = spawn(tts.command, tts.args(text), {
     stdio: ["ignore", "ignore", "ignore"],
   })
+  markActiveTts(sayProc)
   sayProc.on("error", () => {})
 }
 
@@ -81,9 +101,12 @@ export function createSpeak(deps: SpeakDeps) {
       return
     }
 
+    stopActiveTts()
+
     const sayProc = spawn(deps.tts.command, deps.tts.args(text), {
       stdio: ["ignore", "ignore", "inherit"],
     })
+    markActiveTts(sayProc)
     let wasInterrupted = false
     let interruptTask: Promise<void> | null = null
     let handlerAttached = false

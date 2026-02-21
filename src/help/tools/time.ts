@@ -4,7 +4,8 @@ export const timeTool: AssistantTool = {
   id: "time",
   rules: [
     { type: "exact", value: "what time is it" },
-    { type: "regex", pattern: "\\b(?:what(?:'s| is)?\\s+)?time\\b" },
+    { type: "exact", value: "whats the time" },
+    { type: "exact", value: "tell me the time" },
   ],
   run: () => {
     const time = new Date().toLocaleTimeString("en-US", {

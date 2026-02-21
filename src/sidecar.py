@@ -5,6 +5,7 @@ Prints WAKE_DETECTED to stdout whenever the selected model score crosses the thr
 """
 import os
 import sys
+import time
 import types
 import warnings
 
@@ -28,6 +29,7 @@ MODEL = "yo_bitch"
 
 WAKE_MODEL_PATH = f"./wakewords/{MODEL}/{MODEL}.onnx"
 WAKE_THRESHOLD = 0.5
+WAKE_SELF_SUPPRESS_MS = max(0, int(os.getenv("WAKE_SELF_SUPPRESS_MS", "1400")))
 
 # Feature models (required by openwakeword runtime)
 FEATURE_MELSPEC_ONNX = "./wakewords/_shared/melspectrogram.onnx"
@@ -115,6 +117,7 @@ def main():
         file=sys.stderr,
         flush=True,
     )
+    last_detection_at_ms = 0
 
     try:
         while True:
@@ -123,8 +126,12 @@ def main():
             predictions = model.predict(audio)
             score = max((value for key, value in predictions.items() if wake_name in key), default=0.0)
             if score > WAKE_THRESHOLD:
+                now_ms = int(time.monotonic() * 1000)
+                if now_ms - last_detection_at_ms < WAKE_SELF_SUPPRESS_MS:
+                    continue
                 try:
                     print("WAKE_DETECTED", flush=True)
+                    last_detection_at_ms = now_ms
                 except BrokenPipeError:
                     _exit_on_broken_pipe()
     except KeyboardInterrupt:

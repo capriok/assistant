@@ -31,6 +31,10 @@ const INTERRUPT_NO_SPEECH_TIMEOUT_MS = parseTimeoutMs(
 )
 const COMMAND_END_SILENCE_MS = parseTimeoutMs(process.env.COMMAND_END_SILENCE_MS, 1200)
 const INTERRUPT_END_SILENCE_MS = parseTimeoutMs(process.env.INTERRUPT_END_SILENCE_MS, 900)
+const COMMAND_MAX_CAPTURE_MS = parseTimeoutMs(process.env.COMMAND_MAX_CAPTURE_MS, 12000)
+const INTERRUPT_MAX_CAPTURE_MS = parseTimeoutMs(process.env.INTERRUPT_MAX_CAPTURE_MS, 8000)
+const COMMAND_SILENCE_LEVEL = parseSoxSilenceLevel(process.env.COMMAND_SILENCE_LEVEL, "2.0%")
+const INTERRUPT_SILENCE_LEVEL = parseSoxSilenceLevel(process.env.INTERRUPT_SILENCE_LEVEL, "2.5%")
 
 const INPUT_FILE = `/tmp/assistant-input-${process.pid}.wav`
 const INTERRUPT_FILE = `/tmp/assistant-interrupt-${process.pid}.wav`
@@ -71,7 +75,9 @@ async function main() {
     const heardCommand = await recordUntilSilence(
       INPUT_FILE,
       COMMAND_NO_SPEECH_TIMEOUT_MS,
-      COMMAND_END_SILENCE_MS
+      COMMAND_END_SILENCE_MS,
+      COMMAND_MAX_CAPTURE_MS,
+      COMMAND_SILENCE_LEVEL
     )
     if (!heardCommand) {
       safeUnlink(INPUT_FILE)
@@ -197,7 +203,9 @@ async function speak(text: string, wakeLines: ReturnType<typeof createInterface>
         const heardInterrupt = await recordUntilSilence(
           INTERRUPT_FILE,
           INTERRUPT_NO_SPEECH_TIMEOUT_MS,
-          INTERRUPT_END_SILENCE_MS
+          INTERRUPT_END_SILENCE_MS,
+          INTERRUPT_MAX_CAPTURE_MS,
+          INTERRUPT_SILENCE_LEVEL
         )
         if (!heardInterrupt) {
           safeUnlink(INTERRUPT_FILE)
@@ -324,7 +332,9 @@ function cleanResponse(text: string): string {
 function recordUntilSilence(
   filename: string,
   noSpeechTimeoutMs: number,
-  endSilenceMs: number
+  endSilenceMs: number,
+  maxCaptureMs: number,
+  silenceLevel: string
 ): Promise<boolean> {
   const endSilenceSeconds = (endSilenceMs / 1000).toFixed(2)
 
@@ -340,16 +350,17 @@ function recordUntilSilence(
         filename,
         "silence",
         "1",
-        "0.1",
-        "1%",
+        "0.08",
+        silenceLevel,
         "1",
         endSilenceSeconds,
-        "1%",
+        silenceLevel,
       ],
       { stdio: "ignore" }
     )
 
-    let timedOut = false
+    let noSpeechTimedOut = false
+    let maxCaptureReached = false
     let heardSpeech = false
 
     const poll = setInterval(() => {
@@ -362,19 +373,38 @@ function recordUntilSilence(
 
     const timer = setTimeout(() => {
       if (!heardSpeech) {
-        timedOut = true
+        noSpeechTimedOut = true
         sox.kill("SIGTERM")
       }
     }, noSpeechTimeoutMs)
 
+    const maxCaptureTimer = setTimeout(() => {
+      if (sox.killed) return
+      maxCaptureReached = true
+      sox.kill("SIGTERM")
+    }, maxCaptureMs)
+
     sox.on("close", () => {
       clearInterval(poll)
       clearTimeout(timer)
-      resolve(!timedOut)
+      clearTimeout(maxCaptureTimer)
+      if (maxCaptureReached && heardSpeech) {
+        console.log("⏱️ Max capture reached; processing what was heard.")
+      }
+      if (!heardSpeech) {
+        resolve(false)
+        return
+      }
+      if (noSpeechTimedOut) {
+        resolve(false)
+        return
+      }
+      resolve(true)
     })
     sox.on("error", (err) => {
       clearInterval(poll)
       clearTimeout(timer)
+      clearTimeout(maxCaptureTimer)
       reject(err)
     })
   })
@@ -509,5 +539,17 @@ function parseBooleanEnv(input: string | undefined, fallback: boolean): boolean 
   const normalized = input.trim().toLowerCase()
   if (["1", "true", "yes", "on"].includes(normalized)) return true
   if (["0", "false", "no", "off"].includes(normalized)) return false
+  return fallback
+}
+
+function parseSoxSilenceLevel(input: string | undefined, fallback: string): string {
+  if (!input) return fallback
+  const value = input.trim().toLowerCase()
+  if (/^-?\d+(\.\d+)?(%|d)$/.test(value)) {
+    return value
+  }
+  if (/^\d+(\.\d+)?$/.test(value)) {
+    return `${value}%`
+  }
   return fallback
 }

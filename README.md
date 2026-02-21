@@ -142,6 +142,10 @@ Supported variables:
 - `INTERRUPT_NO_SPEECH_TIMEOUT_MS` (default: `5000`)
 - `COMMAND_END_SILENCE_MS` (default: `1200`)
 - `INTERRUPT_END_SILENCE_MS` (default: `900`)
+- `COMMAND_MAX_CAPTURE_MS` (default: `12000`; hard stop for command capture)
+- `INTERRUPT_MAX_CAPTURE_MS` (default: `8000`; hard stop for interrupt capture)
+- `COMMAND_SILENCE_LEVEL` (default: `2.0%`; raise for noisy environments)
+- `INTERRUPT_SILENCE_LEVEL` (default: `2.5%`; raise for noisy environments)
 
 ## Validation
 
@@ -165,6 +169,8 @@ bun run check
   - Re-run `bun run build:llama` and `bun run build:whisper`.
 - `failed to open './packages/whisper.cpp/models/ggml-base.en.bin'`
   - Run `bun run model:download:whisper` or set `WHISPER_MODEL` in `.env`.
+- Recorder hangs after you stop speaking
+  - Increase `COMMAND_SILENCE_LEVEL` (example: `3.5%`) and/or lower `COMMAND_MAX_CAPTURE_MS`.
 - `No supported TTS command found`
   - On Linux, install `espeak` or `speech-dispatcher` (`spd-say`), or set `TTS_COMMAND` to a valid command in `PATH`.
 

@@ -5,7 +5,6 @@ export const timeTool: AssistantTool = {
   rules: [
     { type: "exact", value: "what time is it" },
     { type: "regex", pattern: "\\b(?:what(?:'s| is)?\\s+)?time\\b" },
-    { type: "contains", value: "time" },
   ],
   run: () => {
     const time = new Date().toLocaleTimeString("en-US", {

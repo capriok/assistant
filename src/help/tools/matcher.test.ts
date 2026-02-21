@@ -34,6 +34,15 @@ describe("selectTool", () => {
     expect(selected?.id).toBe("regexTool")
   })
 
+  it("does not match partial word when regex uses boundaries", () => {
+    const tools: AssistantTool[] = [
+      makeTool("timeTool", { rules: [{ type: "regex", pattern: "\\btime\\b" }] }),
+    ]
+
+    const selected = selectTool(tools, ctx("what is 7776776 times 7"))
+    expect(selected).toBeNull()
+  })
+
   it("resolves ties by tool priority", () => {
     const tools: AssistantTool[] = [
       makeTool("a", { priority: 0, rules: [{ type: "contains", value: "time" }] }),

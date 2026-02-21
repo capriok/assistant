@@ -1,7 +1,10 @@
-import { execFile, spawn, spawnSync } from "node:child_process"
+import { execFile, spawn } from "node:child_process"
 import { existsSync, statSync } from "node:fs"
 import { createInterface } from "node:readline"
 import { promisify } from "node:util"
+import { parseBooleanEnv, parseSoxSilenceLevel, parseTimeoutMs } from "./utils/env.ts"
+import { commandExists, safeUnlink } from "./utils/system.ts"
+import { normalize, normalizeAlpha } from "./utils/text.ts"
 
 const execFileAsync = promisify(execFile)
 
@@ -38,7 +41,7 @@ const INTERRUPT_SILENCE_LEVEL = parseSoxSilenceLevel(process.env.INTERRUPT_SILEN
 
 const INPUT_FILE = `/tmp/assistant-input-${process.pid}.wav`
 const INTERRUPT_FILE = `/tmp/assistant-interrupt-${process.pid}.wav`
-const WAKE_SIDECAR_PATH = new URL("./assistant-sidecar.py", import.meta.url).pathname
+const WAKE_SIDECAR_PATH = new URL("./sidecar.py", import.meta.url).pathname
 let useManualWake = false
 let wakeProc: ReturnType<typeof spawn> | null = null
 const tts = resolveTtsConfig()
@@ -90,12 +93,11 @@ async function main() {
     const transcript = await transcribe(INPUT_FILE)
     safeUnlink(INPUT_FILE)
 
-    // if equals WAKE_ACK_TEXT (case insensitive, a-z only), continue
     if (
       normalizeAlpha(transcript) &&
       normalizeAlpha(transcript) === normalizeAlpha(WAKE_ACK_TEXT)
     ) {
-      sleep(2500)
+      await sleep(2500)
       console.log("🔍 Wake word detected. Continuing...")
       continue
     }
@@ -142,6 +144,7 @@ function spawnWakeSidecar() {
   })
 
   proc.on("close", (code) => {
+    if (useManualWake) return
     console.error(`assistant-sidecar.py exited with code ${code}`)
     console.error("Falling back to manual trigger mode.")
     useManualWake = true
@@ -439,22 +442,6 @@ async function transcribe(filename: string): Promise<string> {
   }
 }
 
-function normalize(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s]/g, "")
-    .trim()
-}
-
-function normalizeAlpha(text: string): string {
-  return text.toLowerCase().replace(/[^a-z]/g, "")
-}
-
-function safeUnlink(path: string) {
-  const rm = spawn("rm", ["-f", path], { stdio: "ignore" })
-  rm.on("error", () => {})
-}
-
 function playWakeAckNonBlocking() {
   const text = WAKE_ACK_TEXT.trim()
   if (!text || !tts) return
@@ -513,43 +500,4 @@ function resolveTtsConfig(): TtsConfig | null {
     "No supported TTS command found. Install 'say' (macOS), 'espeak' or 'spd-say' (Linux), or set TTS_COMMAND."
   )
   return null
-}
-
-function commandExists(command: string): boolean {
-  const result = spawnSync("sh", ["-lc", `command -v ${shellEscape(command)} >/dev/null 2>&1`], {
-    stdio: "ignore",
-  })
-  return result.status === 0
-}
-
-function shellEscape(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`
-}
-
-function parseTimeoutMs(input: string | undefined, fallback: number): number {
-  const n = Number(input)
-  if (!Number.isFinite(n) || n <= 0) {
-    return fallback
-  }
-  return Math.round(n)
-}
-
-function parseBooleanEnv(input: string | undefined, fallback: boolean): boolean {
-  if (!input) return fallback
-  const normalized = input.trim().toLowerCase()
-  if (["1", "true", "yes", "on"].includes(normalized)) return true
-  if (["0", "false", "no", "off"].includes(normalized)) return false
-  return fallback
-}
-
-function parseSoxSilenceLevel(input: string | undefined, fallback: string): string {
-  if (!input) return fallback
-  const value = input.trim().toLowerCase()
-  if (/^-?\d+(\.\d+)?(%|d)$/.test(value)) {
-    return value
-  }
-  if (/^\d+(\.\d+)?$/.test(value)) {
-    return `${value}%`
-  }
-  return fallback
 }

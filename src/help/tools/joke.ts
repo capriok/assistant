@@ -1,5 +1,5 @@
 import { buildChatPrompt, requestCompletion } from "../llm.ts"
-import type { AssistantTool } from "./.types.ts"
+import type { AssistantTool } from "../types.ts"
 
 export const jokeTool: AssistantTool = {
   id: "joke",

@@ -1,4 +1,4 @@
-import type { AssistantTool, MatchRule, ToolContext } from "./.types.ts"
+import type { AssistantTool, MatchRule, ToolContext } from "./types.ts"
 
 const DEFAULT_REGEX_FLAGS = "i"
 const warnedInvalidPatterns = new Set<string>()

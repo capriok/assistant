@@ -1,9 +1,9 @@
 import type { createInterface } from "node:readline"
 import { buildChatPrompt, requestCompletion } from "./llm.ts"
+import { formatMatchedRule, selectToolMatch } from "./matcher.ts"
 import { normalize } from "./text.ts"
-import { formatMatchedRule, selectToolMatch } from "./tools/.matcher.ts"
-import type { ToolContext } from "./tools/.types.ts"
 import { TOOLS } from "./tools/index.ts"
+import type { ToolContext } from "./types.ts"
 
 export async function routeInput(
   text: string,

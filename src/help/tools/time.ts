@@ -1,4 +1,4 @@
-import type { AssistantTool } from "./.types.ts"
+import type { AssistantTool } from "../types.ts"
 
 export const timeTool: AssistantTool = {
   id: "time",

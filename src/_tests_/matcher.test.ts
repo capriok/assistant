@@ -1,6 +1,6 @@
 import { describe, expect, it, mock } from "bun:test"
-import { formatMatchedRule, selectTool, selectToolMatch } from "../help/tools/.matcher.ts"
-import type { AssistantTool, ToolContext } from "../help/tools/.types.ts"
+import { formatMatchedRule, selectTool, selectToolMatch } from "../help/matcher.ts"
+import type { AssistantTool, ToolContext } from "../help/types.ts"
 
 function ctx(rawInput: string, normalizedInput = rawInput.toLowerCase()): ToolContext {
   return { rawInput, normalizedInput }

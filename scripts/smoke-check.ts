@@ -3,8 +3,8 @@ import { existsSync } from "node:fs"
 const requiredFiles = [
   "src/assistant.ts",
   "src/llama-cli.ts",
-  "src/llama-server.ts",
-  "src/assistant-sidecar.py",
+  "src/asststant-server.ts",
+  "src/sidecar.py",
   ".gitmodules",
   "packages/llama.cpp/CMakeLists.txt",
   "packages/whisper.cpp/CMakeLists.txt",

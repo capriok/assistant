@@ -8,7 +8,7 @@ This is intended for local development and experimentation. macOS and Linux are 
 
 ## Features
 
-- Wake-word listener (`src/assistant-sidecar.py`) using `openwakeword`
+- Wake-word listener (`src/sidecar.py`) using `openwakeword`
 - Speech-to-text via `whisper.cpp`
 - Local LLM completion via `llama.cpp` server
 - Text-to-speech via auto-detected local command (`say` on macOS, `espeak`/`spd-say` on Linux)
@@ -157,7 +157,7 @@ bun run check
 
 ## Troubleshooting
 
-- `assistant-sidecar.py exited with code ...`
+- `sidecar.py exited with code ...`
   - Ensure your virtual environment is active and `pip install -r requirements.txt` completed.
 - `Microphone init failed`
   - Grant microphone permissions to your terminal app.

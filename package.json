@@ -8,6 +8,8 @@
     "server": "bun src/asststant-server.ts",
     "assist": "bun src/assistant.ts",
     "assist:dev": "bun --watch src/assistant.ts",
+    "test": "bun test ./src/help",
+    "test:help": "bun test src/help/tools/matcher.test.ts",
     "smoke": "bun scripts/smoke-check.ts",
     "setup:submodules": "git submodule update --init --recursive",
     "build:llama": "cmake -S ./packages/llama.cpp -B ./packages/llama.cpp/build && cmake --build ./packages/llama.cpp/build -j",

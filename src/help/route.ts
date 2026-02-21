@@ -3,6 +3,7 @@ import { buildChatPrompt, requestCompletion } from "./llm.ts"
 import { normalize } from "./text.ts"
 import type { ToolContext } from "./tools/.types.ts"
 import { TOOLS } from "./tools/index.ts"
+import { formatMatchedRule, selectToolMatch } from "./tools/matcher.ts"
 
 export async function routeInput(
   text: string,
@@ -15,12 +16,13 @@ export async function routeInput(
     normalizedInput: normalized,
   }
 
-  const tool = TOOLS.find((candidate) => candidate.match(ctx.normalizedInput, ctx))
-  if (tool) {
+  const toolMatch = selectToolMatch(TOOLS, ctx)
+  const tool = toolMatch?.tool
+  if (tool && toolMatch) {
     try {
       const answer = (await tool.run(ctx)).trim()
       if (answer) {
-        console.log(`🔧 Tool: ${tool.id}`)
+        console.log(`🔧 Tool: ${tool.id} (score=${toolMatch.score}, rule=${formatMatchedRule(toolMatch.matchedRule)})`)
         console.log("🤖 Response:", answer)
         await speak(answer, wakeLines)
         return

@@ -53,7 +53,7 @@ export function spawnWakeSidecar(
 
   proc.on("close", (code) => {
     if (state.useManualWake) return
-    console.error(`assistant-sidecar.py exited with code ${code}`)
+    console.error(`sidecar.py exited with code ${code}`)
     console.error("Falling back to manual trigger mode.")
     state.useManualWake = true
     lines.emit("line", "WAKE_DETECTED")

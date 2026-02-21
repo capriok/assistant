@@ -1,9 +1,9 @@
 import type { createInterface } from "node:readline"
 import { buildChatPrompt, requestCompletion } from "./llm.ts"
 import { normalize } from "./text.ts"
+import { formatMatchedRule, selectToolMatch } from "./tools/.matcher.ts"
 import type { ToolContext } from "./tools/.types.ts"
 import { TOOLS } from "./tools/index.ts"
-import { formatMatchedRule, selectToolMatch } from "./tools/matcher.ts"
 
 export async function routeInput(
   text: string,
@@ -22,12 +22,12 @@ export async function routeInput(
     try {
       const answer = (await tool.run(ctx)).trim()
       if (answer) {
-        console.log(`🔧 Tool: ${tool.id} (score=${toolMatch.score}, rule=${formatMatchedRule(toolMatch.matchedRule)})`)
+        console.log(`🔧 Tool: ${tool.id} (rule=${formatMatchedRule(toolMatch.matchedRule)})`)
         console.log("🤖 Response:", answer)
         await speak(answer, wakeLines)
       } else {
         const msg = "I matched a tool, but it returned no answer."
-        console.log(`🔧 Tool: ${tool.id} (score=${toolMatch.score}, rule=${formatMatchedRule(toolMatch.matchedRule)})`)
+        console.log(`🔧 Tool: ${tool.id} (rule=${formatMatchedRule(toolMatch.matchedRule)})`)
         console.log("🤖", msg)
         await speak(msg, wakeLines)
       }

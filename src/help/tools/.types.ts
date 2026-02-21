@@ -5,12 +5,8 @@ export type ToolContext = {
 
 export type RuleSource = "normalized" | "raw"
 
-type MatchRuleBase = {
+type StringMatchRuleBase = {
   source?: RuleSource
-  weight?: number
-}
-
-type StringMatchRuleBase = MatchRuleBase & {
   caseSensitive?: boolean
 }
 
@@ -19,54 +15,22 @@ export type ExactMatchRule = StringMatchRuleBase & {
   value: string
 }
 
-export type StartsWithMatchRule = StringMatchRuleBase & {
-  type: "startsWith"
-  value: string
-}
-
-export type EndsWithMatchRule = StringMatchRuleBase & {
-  type: "endsWith"
-  value: string
-}
-
 export type ContainsMatchRule = StringMatchRuleBase & {
   type: "contains"
   value: string
 }
 
-export type RegexMatchRule = MatchRuleBase & {
+export type RegexMatchRule = {
   type: "regex"
   pattern: string
   flags?: string
+  source?: RuleSource
 }
 
-export type AnyOfMatchRule = MatchRuleBase & {
-  type: "anyOf"
-  rules: MatchRule[]
-}
-
-export type PredicateMatchRule = MatchRuleBase & {
-  type: "predicate"
-  test: (ctx: ToolContext) => boolean
-}
-
-export type MatchRule =
-  | ExactMatchRule
-  | StartsWithMatchRule
-  | EndsWithMatchRule
-  | ContainsMatchRule
-  | RegexMatchRule
-  | AnyOfMatchRule
-  | PredicateMatchRule
+export type MatchRule = ExactMatchRule | ContainsMatchRule | RegexMatchRule
 
 export type AssistantTool = {
   id: string
-  // Standard contract: prefer declarative rules + optional priority.
-  // Use exact for strict commands, contains for broad intent, regex for NL variants.
-  // Keep predicate for advanced cases that rules cannot express cleanly.
-  rules?: MatchRule[]
-  priority?: number
-  // Temporary migration fallback. Prefer rules instead.
-  match?: (text: string, ctx?: ToolContext) => boolean
+  rules: MatchRule[]
   run: (ctx: ToolContext) => Promise<string> | string
 }

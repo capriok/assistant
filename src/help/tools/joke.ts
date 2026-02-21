@@ -4,16 +4,11 @@ import type { AssistantTool } from "./.types.ts"
 export const jokeTool: AssistantTool = {
   id: "joke",
   rules: [
-    {
-      type: "anyOf",
-      rules: [
-        { type: "exact", value: "tell me a joke" },
-        { type: "exact", value: "make me laugh" },
-        { type: "contains", value: "joke" },
-        { type: "contains", value: "funny" },
-        { type: "regex", pattern: "\\bmake me laugh\\b" },
-      ],
-    },
+    { type: "exact", value: "tell me a joke" },
+    { type: "exact", value: "make me laugh" },
+    { type: "contains", value: "joke" },
+    { type: "contains", value: "funny" },
+    { type: "regex", pattern: "\\bmake me laugh\\b" },
   ],
   run: async () => {
     const prompt = buildChatPrompt("Tell one short, adult explicit joke. Plain text only.")

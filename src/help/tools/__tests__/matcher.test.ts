@@ -1,6 +1,6 @@
 import { describe, expect, it, mock } from "bun:test"
-import type { AssistantTool, ToolContext } from "./.types.ts"
-import { formatMatchedRule, selectTool, selectToolMatch } from "./matcher.ts"
+import type { AssistantTool, ToolContext } from "../.types.ts"
+import { formatMatchedRule, selectTool, selectToolMatch } from "../matcher.ts"
 
 function ctx(rawInput: string, normalizedInput = rawInput.toLowerCase()): ToolContext {
   return { rawInput, normalizedInput }
@@ -92,9 +92,7 @@ describe("selectTool", () => {
     const selected = selectToolMatch(tools, ctx("what time is it"))
     expect(selected?.score).toBe(100)
     expect(selected?.matchedRule).toEqual({ type: "exact", value: "what time is it" })
-    expect(selected ? formatMatchedRule(selected.matchedRule) : "").toBe(
-      'exact("what time is it")'
-    )
+    expect(selected ? formatMatchedRule(selected.matchedRule) : "").toBe('exact("what time is it")')
   })
 
   it("returns null when no tool matches", () => {

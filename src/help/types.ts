@@ -1,6 +1,10 @@
+import type { AssistantContext, ToolResult } from "./actions.ts"
+
 export type ToolContext = {
   rawInput: string
   normalizedInput: string
+  /** Data the caller (e.g. Suitey) sent along, such as the user's lists. */
+  context?: AssistantContext
 }
 
 export type RuleSource = "normalized" | "raw"
@@ -29,8 +33,14 @@ export type RegexMatchRule = {
 
 export type MatchRule = ExactMatchRule | ContainsMatchRule | RegexMatchRule
 
+export type ToolOutput = string | ToolResult | null
+
 export type AssistantTool = {
   id: string
   rules: MatchRule[]
-  run: (ctx: ToolContext) => Promise<string> | string
+  /**
+   * A plain string is spoken as-is; a ToolResult can also carry actions.
+   * null means "not for me after all" and the request falls through to chat.
+   */
+  run: (ctx: ToolContext) => Promise<ToolOutput> | ToolOutput
 }

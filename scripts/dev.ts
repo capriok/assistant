@@ -136,7 +136,7 @@ async function waitForModel() {
   return false
 }
 
-if (await waitForModel()) {
+if ((await waitForModel()) && !shuttingDown) {
   const port = process.env.ASSISTANT_HTTP_PORT ?? "3001"
   console.log(`\x1b[32m[dev]\x1b[0m voice stack ready: http://localhost:${port}/chat`)
 }

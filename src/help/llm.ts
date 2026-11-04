@@ -6,6 +6,8 @@ type LlmCompletionOptions = {
   topP?: number
   repeatPenalty?: number
   stop?: string[]
+  /** Constrain output to this JSON Schema (llama.cpp grammar-based sampling). */
+  jsonSchema?: Record<string, unknown>
 }
 
 export function buildChatPrompt(userText: string, systemStyle = config.llm.style): string {
@@ -26,6 +28,9 @@ export async function requestCompletion(
       top_p: options.topP ?? 0.9,
       repeat_penalty: options.repeatPenalty ?? 1.1,
       stop: options.stop ?? ["\nUser:", "\nSystem:"],
+      // Reuse the KV cache for a shared prompt prefix (tool instructions).
+      cache_prompt: true,
+      ...(options.jsonSchema ? { json_schema: options.jsonSchema } : {}),
     }),
   })
   if (!response.ok) {

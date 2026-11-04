@@ -1,3 +1,4 @@
+import type { AssistantContext } from "./help/actions.ts"
 import { processInput } from "./help/route.ts"
 
 const PORT = parseInt(process.env.ASSISTANT_HTTP_PORT ?? "3001", 10)
@@ -22,9 +23,9 @@ Bun.serve({
       })
     }
 
-    let body: { text?: string }
+    let body: { text?: string; context?: AssistantContext }
     try {
-      body = (await req.json()) as { text?: string }
+      body = (await req.json()) as { text?: string; context?: AssistantContext }
     } catch {
       console.log("❌ Invalid JSON body")
       return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
@@ -46,9 +47,10 @@ Bun.serve({
     console.log("🗣 You said:", text)
 
     try {
-      const response = await processInput(text)
-      console.log("🤖 Response:", response)
-      return new Response(JSON.stringify({ response }), {
+      const reply = await processInput(text, body.context)
+      console.log("🤖 Response:", reply.response)
+      if (reply.actions.length > 0) console.log("⚡ Actions:", JSON.stringify(reply.actions))
+      return new Response(JSON.stringify(reply), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       })

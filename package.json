@@ -9,6 +9,7 @@
     "assist": "bun src/assistant.ts",
     "assist:http": "bun src/assistant-server.ts",
     "assist:dev": "bun --watch src/assistant.ts",
+    "dev": "bun scripts/dev.ts",
     "test": "bun test ./src",
     "smoke": "bun scripts/smoke-check.ts",
     "setup:submodules": "git submodule update --init --recursive",

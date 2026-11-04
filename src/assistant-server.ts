@@ -1,7 +1,18 @@
+import { timingSafeEqual } from "node:crypto"
 import type { AssistantContext } from "./help/actions.ts"
 import { processInput } from "./help/route.ts"
 
 const PORT = parseInt(process.env.ASSISTANT_HTTP_PORT ?? "3001", 10)
+const HOST = process.env.ASSISTANT_HTTP_HOST ?? "127.0.0.1"
+const TOKEN = process.env.ASSISTANT_TOKEN?.trim() ?? ""
+
+function isAuthorized(req: Request): boolean {
+  if (!TOKEN) return true
+  const header = req.headers.get("authorization") ?? ""
+  const given = Buffer.from(header)
+  const expected = Buffer.from(`Bearer ${TOKEN}`)
+  return given.length === expected.length && timingSafeEqual(given, expected)
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "http://localhost:3000",
@@ -10,6 +21,7 @@ const corsHeaders = {
 }
 
 Bun.serve({
+  hostname: HOST,
   port: PORT,
   async fetch(req) {
     if (req.method === "OPTIONS") {
@@ -19,6 +31,13 @@ Bun.serve({
     if (req.method !== "POST" || new URL(req.url).pathname !== "/chat") {
       return new Response(JSON.stringify({ error: "Not found" }), {
         status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      })
+    }
+
+    if (!isAuthorized(req)) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       })
     }
@@ -64,4 +83,4 @@ Bun.serve({
   },
 })
 
-console.log(`Assistant HTTP server listening on http://localhost:${PORT}`)
+console.log(`Assistant HTTP server listening on http://${HOST}:${PORT}${TOKEN ? " (token required)" : ""}`)

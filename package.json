@@ -5,8 +5,9 @@
   "private": true,
   "scripts": {
     "cli": "bun src/llama-cli.ts",
-    "server": "bun src/asststant-server.ts",
+    "server": "bun src/llama-server.ts",
     "assist": "bun src/assistant.ts",
+    "assist:http": "bun src/assistant-server.ts",
     "assist:dev": "bun --watch src/assistant.ts",
     "test": "bun test ./src",
     "smoke": "bun scripts/smoke-check.ts",

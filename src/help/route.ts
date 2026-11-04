@@ -1,15 +1,12 @@
 import type { createInterface } from "node:readline"
 import { buildChatPrompt, requestCompletion } from "./llm.ts"
-import { formatMatchedRule, selectToolMatch } from "./matcher.ts"
+import { selectToolMatch } from "./matcher.ts"
 import { normalize } from "./text.ts"
 import { TOOLS } from "./tools/index.ts"
 import type { ToolContext } from "./types.ts"
 
-export async function routeInput(
-  text: string,
-  wakeLines: ReturnType<typeof createInterface>,
-  speak: (text: string, wakeLines: ReturnType<typeof createInterface>) => Promise<void>
-): Promise<void> {
+/** Text-in, text-out. No TTS or readline. Use for HTTP API. */
+export async function processInput(text: string): Promise<string> {
   const normalized = normalize(text)
   const ctx: ToolContext = {
     rawInput: text,
@@ -22,38 +19,33 @@ export async function routeInput(
     try {
       const answer = (await tool.run(ctx)).trim()
       if (answer) {
-        console.log(`🔧 Tool: ${tool.id} (rule=${formatMatchedRule(toolMatch.matchedRule)})`)
-        console.log("🤖 Response:", answer)
-        await speak(answer, wakeLines)
-      } else {
-        const msg = "I matched a tool, but it returned no answer."
-        console.log(`🔧 Tool: ${tool.id} (rule=${formatMatchedRule(toolMatch.matchedRule)})`)
-        console.log("🤖", msg)
-        await speak(msg, wakeLines)
+        return answer
       }
+      return "I matched a tool, but it returned no answer."
     } catch (err) {
       console.error(`Tool ${tool.id} failed:`, (err as Error).message)
-      const msg = "That tool failed. Try again."
-      console.log("🤖", msg)
-      await speak(msg, wakeLines)
+      return "That tool failed. Try again."
     }
-    return
   }
 
   const query = text.trim()
-  console.log("🔍 Asking assistant:", query)
-
   try {
     const prompt = buildChatPrompt(query)
-    const answer = cleanResponse(await requestCompletion(prompt))
-    console.log("🤖 Response:", answer)
-    await speak(answer, wakeLines)
+    return cleanResponse(await requestCompletion(prompt))
   } catch (err) {
     console.error("Assistant request failed:", (err as Error).message)
-    const msg = "Ugh, try again later."
-    console.log("🤖", msg)
-    await speak(msg, wakeLines)
+    return "Ugh, try again later."
   }
+}
+
+export async function routeInput(
+  text: string,
+  wakeLines: ReturnType<typeof createInterface>,
+  speak: (text: string, wakeLines: ReturnType<typeof createInterface>) => Promise<void>
+): Promise<void> {
+  const answer = await processInput(text)
+  console.log("🤖 Response:", answer)
+  await speak(answer, wakeLines)
 }
 
 export function cleanResponse(text: string): string {

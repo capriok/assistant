@@ -59,12 +59,17 @@ export function selectTool(tools: AssistantTool[], ctx: ToolContext): AssistantT
 }
 
 export function selectToolMatch(tools: AssistantTool[], ctx: ToolContext): ToolSelection | null {
+  return selectToolMatches(tools, ctx)[0] ?? null
+}
+
+/** Every tool with a matching rule, in declaration order (first matching rule each). */
+export function selectToolMatches(tools: AssistantTool[], ctx: ToolContext): ToolSelection[] {
+  const matches: ToolSelection[] = []
   for (const tool of tools) {
-    for (const rule of tool.rules) {
-      if (matchesRule(rule, ctx)) return { tool, matchedRule: rule }
-    }
+    const rule = tool.rules.find((r) => matchesRule(r, ctx))
+    if (rule) matches.push({ tool, matchedRule: rule })
   }
-  return null
+  return matches
 }
 
 export function formatMatchedRule(rule: MatchRule): string {

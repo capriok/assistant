@@ -5,7 +5,7 @@
 // and the caller executes them with the signed-in user's permissions, then
 // speaks `response` (or its own message if an action failed).
 //
-// Keep this file in sync with Suitey's next/src/lib/assistant/actions.ts.
+// Keep this file in sync with Suitey's next/src/lib/assistant/contract.ts.
 
 /** An item on one of the user's lists. */
 export type ContextItem = {
@@ -20,6 +20,7 @@ export type ContextList = {
   id: string
   name: string
   type?: string
+  pinned?: boolean
   items?: ContextItem[]
 }
 
@@ -53,7 +54,49 @@ export type ListItemDeleteAction = {
   itemId: string
 }
 
-export type AssistantAction = ListItemCreateAction | ListItemUpdateAction | ListItemDeleteAction
+/** The list types Suitey supports. */
+export type ListType = "Shopping" | "Check" | "Free"
+
+/** Make a new, empty list. */
+export type ListCreateAction = {
+  type: "list.create"
+  name: string
+  listType: ListType
+}
+
+export type ListRenameAction = {
+  type: "list.rename"
+  listId: string
+  name: string
+}
+
+export type ListPinAction = {
+  type: "list.pin"
+  listId: string
+  pinned: boolean
+}
+
+/** Delete every checked item on a list. */
+export type ListClearCheckedAction = {
+  type: "list.clearChecked"
+  listId: string
+}
+
+/** Delete a list. Suitey only allows this when the list is empty. */
+export type ListDeleteAction = {
+  type: "list.delete"
+  listId: string
+}
+
+export type AssistantAction =
+  | ListItemCreateAction
+  | ListItemUpdateAction
+  | ListItemDeleteAction
+  | ListCreateAction
+  | ListRenameAction
+  | ListPinAction
+  | ListClearCheckedAction
+  | ListDeleteAction
 
 /** What a tool returns when it needs more than a spoken reply. */
 export type ToolResult = {

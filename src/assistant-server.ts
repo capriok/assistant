@@ -83,4 +83,6 @@ Bun.serve({
   },
 })
 
-console.log(`Assistant HTTP server listening on http://${HOST}:${PORT}${TOKEN ? " (token required)" : ""}`)
+console.log(
+  `Assistant HTTP server listening on http://${HOST}:${PORT}${TOKEN ? " (token required)" : ""}`
+)

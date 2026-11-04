@@ -1,7 +1,7 @@
 import type { createInterface } from "node:readline"
 import type { AssistantContext, AssistantReply } from "./actions.ts"
 import { buildChatPrompt, requestCompletion } from "./llm.ts"
-import { selectToolMatch } from "./matcher.ts"
+import { selectToolMatches } from "./matcher.ts"
 import { normalize } from "./text.ts"
 import { TOOLS } from "./tools/index.ts"
 import type { ToolContext } from "./types.ts"
@@ -22,21 +22,19 @@ export async function processInput(
     context,
   }
 
-  const toolMatch = selectToolMatch(TOOLS, ctx)
-  const tool = toolMatch?.tool
-  if (tool && toolMatch) {
+  // Try each tool whose rules match, in order. A tool returning null means
+  // "not for me after all" (e.g. "delete the Costco list" reaches the list
+  // tool before the list-item tool), so the next one gets a turn, then chat.
+  for (const { tool } of selectToolMatches(TOOLS, ctx)) {
     try {
       const result = await tool.run(ctx)
-      // null: the tool's rules matched but the request isn't for it (e.g.
-      // "make me a sandwich" vs. the list tool), so fall through to chat.
-      if (result !== null) {
-        const reply =
-          typeof result === "string"
-            ? { response: result, actions: [] }
-            : { response: result.response, actions: result.actions ?? [] }
-        reply.response = reply.response.trim() || "I matched a tool, but it returned no answer."
-        return reply
-      }
+      if (result === null) continue
+      const reply =
+        typeof result === "string"
+          ? { response: result, actions: [] }
+          : { response: result.response, actions: result.actions ?? [] }
+      reply.response = reply.response.trim() || "I matched a tool, but it returned no answer."
+      return reply
     } catch (err) {
       console.error(`Tool ${tool.id} failed:`, (err as Error).message)
       return { response: "That tool failed. Try again.", actions: [] }

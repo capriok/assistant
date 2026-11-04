@@ -48,7 +48,9 @@ describe("list tool matching", () => {
     "clear the checked items off groceries",
     "delete the costco list",
   ])("routes %p to the list tool first", (text) => {
-    expect(matchedIds(text)[0]).toBe("list")
+    // The event and schedule tools see some of these first ("rename ...") and
+    // pass on them unless an event or schedule is named.
+    expect(matchedIds(text).filter((id) => id !== "event" && id !== "schedule")[0]).toBe("list")
   })
 
   it("lets list-item have a turn after the list tool for item removals", () => {
@@ -145,6 +147,12 @@ describe("planListOp", () => {
     const r = planListOp("pin my list", lists, op("pin", "Costco"))
     expect(r?.response).toStartWith("Which list?")
     expect(r?.actions).toBeUndefined()
+  })
+
+  it("doesn't fall back to the only list when they didn't say list", () => {
+    const r = planListOp("rename dentist to doctor", [costco], op("rename", "Costco", "doctor"))
+    expect(r?.actions).toBeUndefined()
+    expect(r?.response).toStartWith("Which list?")
   })
 
   it("uses the only list when there is just one", () => {

@@ -40,6 +40,25 @@ export function nameMentioned(text: string, name: string, filler = DEFAULT_FILLE
   })
 }
 
+/**
+ * Stricter than nameMentioned: every meaningful word of the name was said.
+ * For things whose names often share a word ("Gym" vs "Gym bag"), so one
+ * shared word doesn't pick the wrong one.
+ */
+export function nameFullyMentioned(text: string, name: string, filler = DEFAULT_FILLER): boolean {
+  const said = normalize(text).split(/\s+/)
+  const nameWords = normalize(name)
+    .split(/\s+/)
+    .filter((w) => w && !filler.has(w))
+  return (
+    nameWords.length > 0 &&
+    nameWords.every((w) => {
+      const need = Math.min(4, w.length)
+      return said.some((s) => s.length >= need && s.slice(0, need) === w.slice(0, need))
+    })
+  )
+}
+
 function singular(word: string): string {
   if (word.endsWith("ies")) return `${word.slice(0, -3)}y`
   if (/(s|x|z|ch|sh)es$/.test(word)) return word.slice(0, -2)

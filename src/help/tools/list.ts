@@ -138,7 +138,10 @@ export function planListOp(
   // single list there is nothing to ask about, except for delete.
   const picked = lists.find((l) => l.name === e.list)
   const named = picked && nameMentioned(text, picked.name) ? picked : undefined
-  const only = lists.length === 1 && e.op !== "delete" ? lists[0] : undefined
+  // ...but only when they said "list" ("pin my list"): "rename dentist to
+  // doctor" is about something else and must not rename their one list.
+  const saidList = /\blists?\b/.test(normalize(text))
+  const only = lists.length === 1 && e.op !== "delete" && saidList ? lists[0] : undefined
   const list = named ?? only
   if (!list) {
     // "remove eggs from the list" can look like a delete; let list-item try.

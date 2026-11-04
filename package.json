@@ -12,6 +12,7 @@
     "pm2:restart": "pm2 restart ecosystem.config.cjs",
     "pm2:stop": "pm2 stop ecosystem.config.cjs",
     "pm2:logs": "pm2 logs",
+    "refresh": "git pull --ff-only && bun run pm2:restart",
     "assist:dev": "bun --watch src/assistant.ts",
     "dev": "bun scripts/dev.ts",
     "test": "bun test ./src",

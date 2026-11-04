@@ -138,7 +138,8 @@ pm2 save
 | --- | --- |
 | Status | `pm2 ls` |
 | Logs | `bun run pm2:logs` |
-| Restart after `git pull` or `.env` change | `bun run pm2:restart` |
+| Pull the latest code and restart | `bun run refresh` |
+| Restart after an `.env` change | `bun run pm2:restart` |
 | Stop | `bun run pm2:stop` |
 
 Set `ASSISTANT_TOKEN` in `.env` when the API is reachable from outside the machine; requests must

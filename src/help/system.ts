@@ -1,7 +1,26 @@
 import { spawn, spawnSync } from "node:child_process"
+import { createInterface } from "node:readline"
 
-export function runCommandAndExit(command: string, args: string[]): void {
-  const proc = spawn(command, args, { stdio: "inherit" })
+/**
+ * Run a command until it exits, then exit with its code. With `filter`, each
+ * line of its output (stdout and stderr) is passed through it: return the
+ * line to print, or null to drop it.
+ */
+export function runCommandAndExit(
+  command: string,
+  args: string[],
+  filter?: (line: string) => string | null
+): void {
+  const proc = spawn(command, args, { stdio: filter ? ["inherit", "pipe", "pipe"] : "inherit" })
+  if (filter) {
+    for (const stream of [proc.stdout, proc.stderr]) {
+      if (!stream) continue
+      createInterface({ input: stream }).on("line", (line) => {
+        const out = filter(line)
+        if (out !== null) console.log(out)
+      })
+    }
+  }
   // A supervisor stopping just this wrapper (moon sends SIGTERM when another
   // task fails) would otherwise leave the child running and holding its port,
   // so pass those on. Ctrl-C is different: the terminal already sends SIGINT

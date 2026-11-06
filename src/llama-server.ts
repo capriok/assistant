@@ -1,4 +1,5 @@
 import { parseBooleanEnv } from "./help/env.ts"
+import { newLogState, summarizeLine } from "./help/llama-log.ts"
 import { runCommandAndExit } from "./help/system.ts"
 
 const LLAMA_SERVER = "./packages/llama.cpp/build/bin/llama-server"
@@ -31,4 +32,7 @@ if (NO_WARMUP) {
   args.push("--no-warmup")
 }
 
-runCommandAndExit(LLAMA_SERVER, args)
+// LLAMA_LOG=full shows llama-server's own (very chatty) output.
+const fullLog = process.env.LLAMA_LOG === "full"
+const logState = newLogState()
+runCommandAndExit(LLAMA_SERVER, args, fullLog ? undefined : (line) => summarizeLine(line, logState))

@@ -11,9 +11,10 @@ const GPU_LAYERS = process.env.LLAMA_GPU_LAYERS ?? "48"
 const PARALLEL = process.env.LLAMA_PARALLEL ?? "1"
 const NO_WARMUP = parseBooleanEnv(process.env.LLAMA_NO_WARMUP, true)
 
-// llama-server reads LLAMA_API_KEY from the environment itself; with it set,
-// every request needs "Authorization: Bearer <key>".
-const keyed = Boolean(process.env.LLAMA_API_KEY)
+// With LLAMA_API_KEY set, every request needs "Authorization: Bearer <key>".
+// Passed as a flag so it works on llama.cpp builds that don't read the env var.
+const API_KEY = process.env.LLAMA_API_KEY?.trim()
+const keyed = Boolean(API_KEY)
 console.log(`Running llama-server with ${HF_REPO}${keyed ? " (API key required)" : ""}`)
 
 const args = [
@@ -30,6 +31,10 @@ const args = [
   "--parallel",
   PARALLEL,
 ]
+
+if (API_KEY) {
+  args.push("--api-key", API_KEY)
+}
 
 if (NO_WARMUP) {
   args.push("--no-warmup")

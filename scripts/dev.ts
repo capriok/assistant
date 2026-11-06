@@ -1,5 +1,5 @@
-// Starts the full voice stack for suitey: the llama model server and the
-// assistant HTTP API. Ctrl-C stops everything this script started.
+// Starts the llama model server that Suitey's voice assistant calls.
+// Ctrl-C stops everything this script started.
 //
 // If something is already listening on LLAMA_PORT, it is reused instead of
 // starting a second copy of the model.
@@ -14,7 +14,6 @@ type Service = { name: string; color: string; script: string }
 
 const services: Service[] = [
   { name: "llama", color: "\x1b[35m", script: "src/llama-server.ts" },
-  { name: "http", color: "\x1b[36m", script: "src/assistant-server.ts" },
 ]
 
 const running: { service: Service; proc: ChildProcess }[] = []
@@ -137,6 +136,5 @@ async function waitForModel() {
 }
 
 if ((await waitForModel()) && !shuttingDown) {
-  const port = process.env.ASSISTANT_HTTP_PORT ?? "3001"
-  console.log(`\x1b[32m[dev]\x1b[0m voice stack ready: http://localhost:${port}/chat`)
+  console.log(`\x1b[32m[dev]\x1b[0m model ready: http://${LLAMA_HOST}:${LLAMA_PORT}`)
 }

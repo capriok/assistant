@@ -123,9 +123,9 @@ Expected startup output includes lines similar to:
 
 ## Running on a server (optional)
 
-To keep the HTTP API (`assist:http`) and the LLM server running on an always-on machine, use
-[pm2](https://pm2.keymetrics.io/). `ecosystem.config.cjs` defines two processes:
-`assistant-llm` (`bun run server`) and `assistant-api` (`bun run assist:http`).
+To keep the model server running on an always-on machine, use [pm2](https://pm2.keymetrics.io/).
+`ecosystem.config.cjs` defines one process, `assistant-llm` (`bun run server`). Suitey calls it
+directly (`/v1/chat/completions`) and runs the voice tools itself.
 
 ```bash
 bun add -g pm2
@@ -142,9 +142,10 @@ pm2 save
 | Restart after an `.env` change | `bun run pm2:restart` |
 | Stop | `bun run pm2:stop` |
 
-Set `ASSISTANT_TOKEN` in `.env` when the API is reachable from outside the machine; requests must
-then send `Authorization: Bearer <token>`. The API binds to `127.0.0.1` by default
-(`ASSISTANT_HTTP_HOST`), so expose it through a tunnel rather than an open port.
+Set `LLAMA_API_KEY` in `.env` when the model is reachable from outside the machine; requests must
+then send `Authorization: Bearer <key>`. It binds to `127.0.0.1` by default (`LLAMA_HOST`), so
+expose it through a tunnel rather than an open port. Suitey needs `LLAMA_URL` (the tunnel URL)
+and the same `LLAMA_API_KEY`.
 
 ## Configuration
 

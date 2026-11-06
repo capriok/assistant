@@ -1,4 +1,5 @@
-// Optional pm2 setup for running the HTTP API on an always-on box.
+// pm2 setup for running the model on an always-on box (Suitey calls it
+// through the tunnel).
 // Usage: bun run pm2:start (requires `bun add -g pm2`). See README "Running on a server".
 
 const common = {
@@ -14,6 +15,5 @@ const common = {
 module.exports = {
   apps: [
     { ...common, name: "assistant-llm", args: "run server" },
-    { ...common, name: "assistant-api", args: "run assist:http" },
   ],
 }
